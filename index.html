@@ -613,22 +613,23 @@ function showRandomAlert() {
 }
 
 // ── 진정 음향 (Web Audio API) ──
-let calmCtx = null, calmNodes = [];
+let calmNodes = [];
 
 function startCalmSound() {
   stopCalmSound();
+  if (!audioCtx) return;
   try {
-    calmCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const freqs = [174, 285, 396]; // 솔페지오 주파수 (긴장 완화)
     freqs.forEach(freq => {
-      const osc  = calmCtx.createOscillator();
-      const gain = calmCtx.createGain();
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
       osc.type = 'sine';
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, calmCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.04, calmCtx.currentTime + 2);
+      gain.gain.setValueAtTime(0, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 2);
       osc.connect(gain);
-      gain.connect(calmCtx.destination);
+      gain.connect(audioCtx.destination);
       osc.start();
       calmNodes.push({ osc, gain });
     });
@@ -638,12 +639,11 @@ function startCalmSound() {
 function stopCalmSound() {
   calmNodes.forEach(({ osc, gain }) => {
     try {
-      gain.gain.linearRampToValueAtTime(0, (calmCtx?.currentTime || 0) + 1);
-      osc.stop((calmCtx?.currentTime || 0) + 1);
+      gain.gain.linearRampToValueAtTime(0, (audioCtx?.currentTime || 0) + 1);
+      osc.stop((audioCtx?.currentTime || 0) + 1);
     } catch(e) {}
   });
   calmNodes = [];
-  if (calmCtx) { setTimeout(() => { try { calmCtx.close(); } catch(e){} calmCtx = null; }, 1200); }
 }
 
 // ── 알림 무시 (모니터링 재시작) ──
