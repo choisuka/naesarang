@@ -63,13 +63,150 @@
   }
 
   /* ── 1. 온보딩 ── */
-  #screen-onboard { background: #1a1a2e; }
-  #screen-onboard h1 { font-size: 3rem; color: #e94560; letter-spacing: 4px; }
-  #screen-onboard .slogan {
+  #screen-onboard {
+    background: #0a0a18;
+    position: relative;
+    overflow: hidden;
+    justify-content: center;
+  }
+  .onboard-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 20%, rgba(233,69,96,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99,60,180,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 20% 70%, rgba(30,100,200,0.12) 0%, transparent 60%);
+    animation: bgShift 8s ease-in-out infinite alternate;
+  }
+  @keyframes bgShift {
+    0%   { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(30deg); }
+  }
+  .onboard-stars {
+    position: absolute; inset: 0; overflow: hidden;
+  }
+  .onboard-stars::before, .onboard-stars::after {
+    content: '';
+    position: absolute;
+    width: 2px; height: 2px;
+    border-radius: 50%;
+    background: white;
+    box-shadow:
+      80px 120px #fff, 200px 60px rgba(255,255,255,0.6),
+      320px 200px #fff, 50px 300px rgba(255,255,255,0.4),
+      400px 100px rgba(255,255,255,0.7), 150px 400px #fff,
+      280px 350px rgba(255,255,255,0.5), 360px 280px #fff,
+      120px 500px rgba(255,255,255,0.4), 450px 450px #fff,
+      30px 180px rgba(255,255,255,0.6), 500px 200px #fff,
+      240px 130px rgba(255,255,255,0.3), 420px 360px #fff;
+    animation: twinkle 4s ease-in-out infinite alternate;
+  }
+  .onboard-stars::after {
+    box-shadow:
+      100px 80px rgba(255,255,255,0.5), 350px 150px #fff,
+      60px 400px rgba(255,255,255,0.6), 480px 320px #fff,
+      220px 250px rgba(255,255,255,0.4), 310px 480px #fff,
+      170px 50px #fff, 440px 50px rgba(255,255,255,0.5);
+    animation-delay: 2s;
+  }
+  @keyframes twinkle {
+    0%   { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+  .onboard-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 0 32px;
+  }
+  .onboard-heart {
+    font-size: 4.5rem;
+    margin-bottom: 8px;
+    animation: heartbeat 2.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(233,69,96,0.8));
+  }
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    15%       { transform: scale(1.15); }
+    30%       { transform: scale(1); }
+    45%       { transform: scale(1.08); }
+    60%       { transform: scale(1); }
+  }
+  .onboard-title {
+    font-size: 3.2rem;
+    font-weight: 800;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, #ff6b8a, #e94560, #c0392b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+    text-shadow: none;
+    filter: drop-shadow(0 2px 12px rgba(233,69,96,0.4));
+  }
+  .onboard-sub {
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 48px;
+    text-transform: uppercase;
+  }
+  .onboard-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 320px;
+    backdrop-filter: blur(12px);
+    margin-bottom: 32px;
+  }
+  .onboard-card .line {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .onboard-card .line:last-child { border-bottom: none; }
+  .onboard-card .icon {
+    font-size: 1.5rem;
+    width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .onboard-card .text { text-align: left; }
+  .onboard-card .text strong {
+    display: block;
+    font-size: 0.9rem;
+    color: #fff;
+    font-weight: 600;
+  }
+  .onboard-card .text span {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .onboard-btn {
+    width: 100%;
+    max-width: 320px;
+    padding: 18px;
+    border: none;
+    border-radius: 50px;
     font-size: 1.1rem;
-    color: #ccc;
-    margin: 16px 0 40px;
-    line-height: 1.8;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #e94560, #c0392b);
+    color: #fff;
+    box-shadow: 0 8px 32px rgba(233,69,96,0.45), 0 2px 8px rgba(0,0,0,0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .onboard-btn:active {
+    transform: scale(0.97);
+    box-shadow: 0 4px 16px rgba(233,69,96,0.3);
   }
 
   /* ── 2. 설정 ── */
@@ -380,10 +517,37 @@
 
 <!-- 1. 온보딩 -->
 <div id="screen-onboard" class="screen active">
-  <h1>내사랑</h1>
-  <div class="slogan">사랑하는 내 아이에게<br>왜 화날까?</div>
-  <p>화나는 순간, 잠깐 멈출 수 있도록<br>조용히 도와드릴게요.</p>
-  <button class="btn" onclick="showScreen('setup')">시작하기</button>
+  <div class="onboard-bg"></div>
+  <div class="onboard-stars"></div>
+  <div class="onboard-content">
+    <div class="onboard-heart">❤️</div>
+    <div class="onboard-title">내사랑</div>
+    <div class="onboard-sub">My Love · 감정 케어</div>
+    <div class="onboard-card">
+      <div class="line">
+        <div class="icon">🎤</div>
+        <div class="text">
+          <strong>목소리 감지</strong>
+          <span>화가 날 때 자동으로 개입해요</span>
+        </div>
+      </div>
+      <div class="line">
+        <div class="icon">🎵</div>
+        <div class="text">
+          <strong>진정 음악</strong>
+          <span>아름다운 소리로 감정을 가라앉혀요</span>
+        </div>
+      </div>
+      <div class="line">
+        <div class="icon">👶</div>
+        <div class="text">
+          <strong>아이 사진</strong>
+          <span>사랑하는 얼굴이 가장 좋은 진정제예요</span>
+        </div>
+      </div>
+    </div>
+    <button class="onboard-btn" onclick="showScreen('setup')">시작하기</button>
+  </div>
 </div>
 
 <!-- 2. 설정 -->
