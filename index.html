@@ -64,152 +64,159 @@
 
   /* ── 1. 온보딩 ── */
   #screen-onboard {
-    background: #0a0a18;
+    background: linear-gradient(170deg, #3b1f6b 0%, #1e1040 45%, #12243a 100%);
     position: relative;
-    overflow-y: auto;
-    overflow-x: hidden;
-    justify-content: flex-start;
-    padding-top: 48px;
-    padding-bottom: 40px;
+    overflow: hidden;
+    justify-content: space-between;
+    padding: 0 24px 36px;
   }
   .onboard-bg {
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0; z-index: 0;
     background:
-      radial-gradient(ellipse 80% 60% at 50% 20%, rgba(233,69,96,0.18) 0%, transparent 70%),
-      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99,60,180,0.15) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 50% at 20% 70%, rgba(30,100,200,0.12) 0%, transparent 60%);
-    animation: bgShift 8s ease-in-out infinite alternate;
+      radial-gradient(ellipse 100% 50% at 50% 0%, rgba(180,120,255,0.25) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 40% at 10% 80%, rgba(255,150,180,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 60%, rgba(80,160,255,0.1) 0%, transparent 60%);
+    animation: bgPulse 6s ease-in-out infinite alternate;
   }
-  @keyframes bgShift {
-    0%   { filter: hue-rotate(0deg); }
-    100% { filter: hue-rotate(30deg); }
-  }
-  .onboard-stars {
-    position: absolute; inset: 0; overflow: hidden;
-  }
-  .onboard-stars::before, .onboard-stars::after {
-    content: '';
-    position: absolute;
-    width: 2px; height: 2px;
-    border-radius: 50%;
-    background: white;
-    box-shadow:
-      80px 120px #fff, 200px 60px rgba(255,255,255,0.6),
-      320px 200px #fff, 50px 300px rgba(255,255,255,0.4),
-      400px 100px rgba(255,255,255,0.7), 150px 400px #fff,
-      280px 350px rgba(255,255,255,0.5), 360px 280px #fff,
-      120px 500px rgba(255,255,255,0.4), 450px 450px #fff,
-      30px 180px rgba(255,255,255,0.6), 500px 200px #fff,
-      240px 130px rgba(255,255,255,0.3), 420px 360px #fff;
-    animation: twinkle 4s ease-in-out infinite alternate;
-  }
-  .onboard-stars::after {
-    box-shadow:
-      100px 80px rgba(255,255,255,0.5), 350px 150px #fff,
-      60px 400px rgba(255,255,255,0.6), 480px 320px #fff,
-      220px 250px rgba(255,255,255,0.4), 310px 480px #fff,
-      170px 50px #fff, 440px 50px rgba(255,255,255,0.5);
-    animation-delay: 2s;
-  }
-  @keyframes twinkle {
-    0%   { opacity: 0.4; }
+  @keyframes bgPulse {
+    0%   { opacity: 0.8; }
     100% { opacity: 1; }
   }
-  .onboard-content {
-    position: relative;
-    z-index: 2;
+  /* 떠다니는 빛 입자 */
+  .onboard-particles {
+    position: absolute; inset: 0; z-index: 0; overflow: hidden;
+  }
+  .onboard-particles::before {
+    content: '';
+    position: absolute;
+    width: 3px; height: 3px; border-radius: 50%; background: rgba(200,168,255,0.8);
+    box-shadow:
+      60px 100px rgba(200,168,255,0.9), 180px 50px rgba(255,200,220,0.7),
+      300px 180px rgba(200,168,255,0.6), 40px 280px rgba(255,220,200,0.5),
+      380px 90px rgba(180,220,255,0.8), 130px 380px rgba(200,168,255,0.7),
+      260px 300px rgba(255,200,220,0.5), 340px 260px rgba(200,168,255,0.9),
+      100px 480px rgba(180,220,255,0.5), 430px 420px rgba(200,168,255,0.7),
+      20px 160px rgba(255,220,200,0.6), 480px 180px rgba(200,168,255,0.8),
+      220px 110px rgba(255,200,220,0.4), 400px 340px rgba(180,220,255,0.7);
+    animation: particleFloat 5s ease-in-out infinite alternate;
+  }
+  .onboard-particles::after {
+    content: '';
+    position: absolute;
+    width: 2px; height: 2px; border-radius: 50%; background: rgba(255,200,220,0.7);
+    box-shadow:
+      90px 70px rgba(255,200,220,0.6), 330px 130px rgba(200,168,255,0.9),
+      50px 370px rgba(255,220,200,0.7), 460px 300px rgba(200,168,255,0.8),
+      200px 230px rgba(180,220,255,0.5), 290px 460px rgba(255,200,220,0.9),
+      160px 40px rgba(200,168,255,0.8), 420px 40px rgba(255,220,200,0.6);
+    animation: particleFloat 7s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes particleFloat {
+    0%   { transform: translateY(0) translateX(0); opacity: 0.5; }
+    100% { transform: translateY(-20px) translateX(10px); opacity: 1; }
+  }
+
+  /* 상단 타이틀 영역 */
+  .onboard-top {
+    position: relative; z-index: 2;
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     width: 100%;
-    padding: 0 32px;
   }
-  .onboard-heart {
-    font-size: 3.5rem;
-    margin-bottom: 6px;
-    animation: heartbeat 2.5s ease-in-out infinite;
-    filter: drop-shadow(0 0 20px rgba(160,100,255,0.8));
+  .onboard-title-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 10px;
   }
-  @keyframes heartbeat {
-    0%, 100% { transform: scale(1); }
-    15%       { transform: scale(1.15); }
-    30%       { transform: scale(1); }
-    45%       { transform: scale(1.08); }
-    60%       { transform: scale(1); }
+  /* 글로우 배경 레이어 */
+  .onboard-title-glow {
+    position: absolute;
+    inset: -20px -30px;
+    background: radial-gradient(ellipse, rgba(180,120,255,0.35) 0%, transparent 70%);
+    animation: glowPulse 2.8s ease-in-out infinite;
+    border-radius: 50%;
+  }
+  @keyframes glowPulse {
+    0%, 100% { transform: scale(1);   opacity: 0.7; }
+    50%       { transform: scale(1.2); opacity: 1;   }
   }
   .onboard-title {
-    font-size: 3.2rem;
-    font-weight: 800;
-    letter-spacing: 8px;
-    background: linear-gradient(135deg, #c8a8ff, #a78bfa, #7c5cbf);
+    position: relative;
+    font-size: 4.8rem;
+    font-weight: 900;
+    letter-spacing: 12px;
+    background: linear-gradient(120deg, #ffe8ff 0%, #d4aaff 25%, #ffffff 50%, #ffaacc 75%, #d4aaff 100%);
+    background-size: 250% 100%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 6px;
-    text-shadow: none;
-    filter: drop-shadow(0 2px 16px rgba(160,100,255,0.5));
+    animation: titleFloat 3.5s ease-in-out infinite, shimmer 3s linear infinite;
+    filter: drop-shadow(0 0 1px rgba(255,255,255,0.5));
+  }
+  @keyframes titleFloat {
+    0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
+    50%       { transform: translateY(-10px) rotate(0.5deg); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
   }
   .onboard-sub {
-    font-size: 0.8rem;
-    letter-spacing: 3px;
-    color: rgba(255,255,255,0.35);
-    margin-bottom: 28px;
+    font-size: 0.75rem;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.4);
     text-transform: uppercase;
+    animation: titleFloat 3.5s ease-in-out infinite;
+    animation-delay: 0.2s;
+  }
+
+  /* 하단 카드+버튼 영역 */
+  .onboard-bottom {
+    position: relative; z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
   .onboard-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 24px;
-    padding: 18px 20px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 14px 18px;
     width: 100%;
-    max-width: 320px;
-    backdrop-filter: blur(12px);
-    margin-bottom: 24px;
+    max-width: 340px;
+    backdrop-filter: blur(16px);
   }
   .onboard-card .line {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
   }
   .onboard-card .line:last-child { border-bottom: none; }
-  .onboard-card .icon {
-    font-size: 1.5rem;
-    width: 36px;
-    text-align: center;
-    flex-shrink: 0;
-  }
+  .onboard-card .icon { font-size: 1.3rem; width: 32px; text-align: center; flex-shrink: 0; }
   .onboard-card .text { text-align: left; }
-  .onboard-card .text strong {
-    display: block;
-    font-size: 0.9rem;
-    color: #fff;
-    font-weight: 600;
-  }
-  .onboard-card .text span {
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.4);
-  }
+  .onboard-card .text strong { display: block; font-size: 0.85rem; color: #fff; font-weight: 600; }
+  .onboard-card .text span   { font-size: 0.72rem; color: rgba(255,255,255,0.4); }
   .onboard-btn {
-    width: 100%;
-    max-width: 320px;
-    padding: 18px;
-    border: none;
-    border-radius: 50px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 1px;
+    width: 100%; max-width: 340px;
+    padding: 16px;
+    border: none; border-radius: 50px;
+    font-size: 1.05rem; font-weight: 700; letter-spacing: 2px;
     cursor: pointer;
-    background: linear-gradient(135deg, #a78bfa, #7c5cbf);
+    background: linear-gradient(135deg, #b47fff, #7c4cbf, #5b2d9e);
     color: #fff;
-    box-shadow: 0 8px 32px rgba(160,100,255,0.45), 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 6px 28px rgba(160,100,255,0.5), 0 2px 8px rgba(0,0,0,0.3);
     transition: transform 0.15s, box-shadow 0.15s;
   }
   .onboard-btn:active {
     transform: scale(0.97);
-    box-shadow: 0 4px 16px rgba(160,100,255,0.3);
+    box-shadow: 0 3px 14px rgba(160,100,255,0.3);
   }
 
   /* ── 2. 설정 ── */
@@ -521,11 +528,15 @@
 <!-- 1. 온보딩 -->
 <div id="screen-onboard" class="screen active">
   <div class="onboard-bg"></div>
-  <div class="onboard-stars"></div>
-  <div class="onboard-content">
-    <div class="onboard-heart">❤️</div>
-    <div class="onboard-title">내사랑</div>
-    <div class="onboard-sub">My Love · 감정 케어</div>
+  <div class="onboard-particles"></div>
+  <div class="onboard-top">
+    <div class="onboard-title-wrap">
+      <div class="onboard-title-glow"></div>
+      <div class="onboard-title">내사랑</div>
+    </div>
+    <div class="onboard-sub">My Love &middot; 감정 케어</div>
+  </div>
+  <div class="onboard-bottom">
     <div class="onboard-card">
       <div class="line">
         <div class="icon">🎤</div>
@@ -771,6 +782,8 @@ async function startMic() {
   }
 }
 
+let alertLock = false;
+
 function monitorVolume() {
   const buf = new Float32Array(analyser.fftSize);
   const threshold = 0.015 + (10 - sensitivity) * 0.012;
@@ -782,18 +795,25 @@ function monitorVolume() {
     const pct = Math.min(rms / 0.3 * 100, 100);
     document.getElementById('volume-bar').style.width = pct + '%';
 
+    if (alertLock) return;
+
     if (rms > threshold) {
       highCount++;
+      if (highCount === 1) {
+        playGong();                        // 즉시 징 소리
+        alertLock = true;
+        setTimeout(() => { alertLock = false; }, 3000); // 3초 잠금
+      }
       if (highCount === 3) {
-        startCalmSound();          // 먼저 음악
+        startCalmSound();                  // 진정 음악
       }
       if (highCount >= 5) {
         highCount = 0;
-        setTimeout(triggerAlert, 2000);  // 2초 후 개입 화면
+        setTimeout(triggerAlert, 2000);
       }
     } else {
       if (highCount > 0 && highCount < 5) {
-        stopCalmSound();           // 큰 소리가 멈추면 음악도 끔
+        stopCalmSound();
       }
       highCount = Math.max(0, highCount - 1);
     }
@@ -817,6 +837,24 @@ function showRandomAlert() {
 
 // ── 진정 음향 ──
 let calmNodes = [];
+
+function playGong() {
+  if (!audioCtx) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    // 징 소리: 낮은 기본음 + 배음 2개로 금속 질감
+    [[220, 0.7], [440, 0.35], [660, 0.2]].forEach(([freq, vol]) => {
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 2.6);
+    });
+  } catch(e) {}
+}
 
 function stopCalmSound() {
   if (calmTimeout) { clearTimeout(calmTimeout); calmTimeout = null; }
