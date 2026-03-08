@@ -294,6 +294,24 @@
   }
   .log-back-btn.visible { display: flex; }
 
+  /* ── 워치 연결 ── */
+  .watch-wrap { width: 100%; max-width: 320px; margin-bottom: 8px; }
+  .watch-status { font-size: 0.8rem; text-align: center; margin-top: 8px; min-height: 1.2em; }
+  .watch-status.connected { color: #4caf50; }
+  .watch-status.error     { color: #e94560; }
+
+  /* ── 심박수 표시 ── */
+  .hr-display {
+    margin-top: 16px; text-align: center;
+  }
+  .hr-display #hr-value { font-size: 2rem; font-weight: 700; color: #e94560; }
+  .hr-display .hr-unit  { font-size: 0.9rem; color: #888; }
+  #hr-bar-wrap {
+    width: 160px; height: 4px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; margin: 8px auto 0; overflow: hidden;
+  }
+  #hr-bar { height: 100%; background: #e94560; border-radius: 2px; width: 0%; transition: width 0.5s; }
+
   /* ── 설정 아이콘 ── */
   .settings-btn {
     position: fixed; top: 16px; right: 16px;
@@ -367,6 +385,11 @@
     <div class="sensitivity-labels"><span>민감하게</span><span>크게 외쳐야</span></div>
   </div>
 
+  <div class="watch-wrap">
+    <button class="btn ghost" id="watch-btn" onclick="connectWatch()">⌚ 갤럭시 워치 연결</button>
+    <div id="watch-status" class="watch-status"></div>
+  </div>
+
   <button class="btn" onclick="startListening()">감지 시작</button>
   <button class="btn ghost" onclick="showScreen('listen'); startListeningDemo()">사진 없이 시작</button>
 </div>
@@ -381,6 +404,11 @@
     <div class="volume-bar" id="volume-bar"></div>
   </div>
   <h2>조용히 듣고 있어요</h2>
+  <p style="font-size:0.8rem;color:#444;margin-top:12px">폰을 세게 흔들어도 작동해요</p>
+  <div id="hr-display" class="hr-display" style="display:none">
+    <span id="hr-value">--</span> <span class="hr-unit">BPM</span>
+    <div id="hr-bar-wrap"><div id="hr-bar"></div></div>
+  </div>
 </div>
 
 <!-- 4. 개입 -->
@@ -441,6 +469,13 @@
     <div class="log-summary-card">
       <div class="num" id="log-today">0</div>
       <div class="lbl">오늘</div>
+    </div>
+  </div>
+  <div class="log-chart-wrap" id="log-chart-wrap" style="width:100%;max-width:360px;margin-bottom:8px;display:none">
+    <div style="font-size:0.8rem;color:#555;margin:16px 0 10px;text-align:left">시간대별 감지 패턴</div>
+    <div id="log-chart" style="display:flex;align-items:flex-end;gap:3px;height:60px"></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#444;margin-top:4px">
+      <span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>23시</span>
     </div>
   </div>
   <div class="log-list" id="log-list"></div>
@@ -520,6 +555,7 @@ function stopMic() {
 
 async function startMic() {
   stopMic();
+  initShake();
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
@@ -534,7 +570,7 @@ async function startMic() {
 
 function monitorVolume() {
   const buf = new Float32Array(analyser.fftSize);
-  const threshold = 0.04 + (10 - sensitivity) * 0.025;
+  const threshold = 0.015 + (10 - sensitivity) * 0.012;
   let highCount = 0;
 
   monitoringInterval = setInterval(() => {
@@ -545,11 +581,17 @@ function monitorVolume() {
 
     if (rms > threshold) {
       highCount++;
-      if (highCount >= 8) {
+      if (highCount === 3) {
+        startCalmSound();          // 먼저 음악
+      }
+      if (highCount >= 5) {
         highCount = 0;
-        triggerAlert();
+        setTimeout(triggerAlert, 2000);  // 2초 후 개입 화면
       }
     } else {
+      if (highCount > 0 && highCount < 5) {
+        stopCalmSound();           // 큰 소리가 멈추면 음악도 끔
+      }
       highCount = Math.max(0, highCount - 1);
     }
   }, 150);
@@ -570,8 +612,43 @@ function showRandomAlert() {
   document.getElementById('alert-sub').textContent = msg.p;
 }
 
+// ── 진정 음향 (Web Audio API) ──
+let calmCtx = null, calmNodes = [];
+
+function startCalmSound() {
+  stopCalmSound();
+  try {
+    calmCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const freqs = [174, 285, 396]; // 솔페지오 주파수 (긴장 완화)
+    freqs.forEach(freq => {
+      const osc  = calmCtx.createOscillator();
+      const gain = calmCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, calmCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.04, calmCtx.currentTime + 2);
+      osc.connect(gain);
+      gain.connect(calmCtx.destination);
+      osc.start();
+      calmNodes.push({ osc, gain });
+    });
+  } catch(e) {}
+}
+
+function stopCalmSound() {
+  calmNodes.forEach(({ osc, gain }) => {
+    try {
+      gain.gain.linearRampToValueAtTime(0, (calmCtx?.currentTime || 0) + 1);
+      osc.stop((calmCtx?.currentTime || 0) + 1);
+    } catch(e) {}
+  });
+  calmNodes = [];
+  if (calmCtx) { setTimeout(() => { try { calmCtx.close(); } catch(e){} calmCtx = null; }, 1200); }
+}
+
 // ── 알림 무시 (모니터링 재시작) ──
 function dismissAlert() {
+  stopCalmSound();
   saveLog('dismissed');
   showScreen('listen');
   startMic();
@@ -588,6 +665,8 @@ function triggerAlert() {
   }
   showRandomAlert();
   showScreen('alert');
+  startCalmSound();
+  if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
 }
 
 // ── 호흡 ──
@@ -645,6 +724,7 @@ function startTimer() {
 
 // ── 마무리 ──
 function goBack() {
+  stopCalmSound();
   saveLog('calmed');
   showScreen('listen');
   startMic();
@@ -697,7 +777,117 @@ function openLog() {
       }).join('')
     ).join('');
   }
+  // 시간대별 패턴 차트
+  const hourCounts = new Array(24).fill(0);
+  logs.forEach(l => hourCounts[new Date(l.time).getHours()]++);
+  const maxCount = Math.max(...hourCounts, 1);
+  const chartEl = document.getElementById('log-chart');
+  const wrapEl  = document.getElementById('log-chart-wrap');
+  if (logs.length > 0) {
+    wrapEl.style.display = 'block';
+    chartEl.innerHTML = hourCounts.map((c, h) => {
+      const pct = Math.round((c / maxCount) * 100);
+      const color = c === 0 ? '#1e2a3a' : c === maxCount ? '#e94560' : '#0f3460';
+      return `<div title="${h}시 ${c}회" style="flex:1;height:${Math.max(pct,4)}%;background:${color};border-radius:2px 2px 0 0;min-height:4px"></div>`;
+    }).join('');
+  } else {
+    wrapEl.style.display = 'none';
+  }
+
   showScreen('log');
+}
+
+// ── 폰 흔들기 트리거 ──
+let lastShakeTime = 0;
+
+async function initShake() {
+  // iOS 13+ 권한 요청
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try { await DeviceMotionEvent.requestPermission(); } catch(e) { return; }
+  }
+  window.addEventListener('devicemotion', e => {
+    const a = e.accelerationIncludingGravity;
+    if (!a) return;
+    const total = Math.abs(a.x) + Math.abs(a.y) + Math.abs(a.z);
+    if (total > 40) {  // 강하게 흔들 때 (단위: m/s²)
+      const now = Date.now();
+      if (now - lastShakeTime > 3000) {  // 3초 내 중복 방지
+        lastShakeTime = now;
+        triggerAlert();
+      }
+    }
+  });
+}
+
+// ── 갤럭시 워치 BLE 심박 ──
+let watchDevice = null, watchChar = null;
+const HR_SERVICE  = 0x180D;
+const HR_CHAR     = 0x2A37;
+let hrHistory = [];   // 최근 심박수 기록 (베이스라인용)
+let hrBaseline = 0;
+
+async function connectWatch() {
+  const btn    = document.getElementById('watch-btn');
+  const status = document.getElementById('watch-status');
+
+  if (!navigator.bluetooth) {
+    status.textContent = 'Web Bluetooth 미지원 (안드로이드 Chrome 필요)';
+    status.className = 'watch-status error';
+    return;
+  }
+
+  try {
+    status.textContent = '스캔 중...';
+    status.className = 'watch-status';
+    watchDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [HR_SERVICE] }],
+      optionalServices: [HR_SERVICE]
+    });
+    status.textContent = '연결 중...';
+    const server  = await watchDevice.gatt.connect();
+    const service = await server.getPrimaryService(HR_SERVICE);
+    watchChar     = await service.getCharacteristic(HR_CHAR);
+    await watchChar.startNotifications();
+    watchChar.addEventListener('characteristicvaluechanged', onHRData);
+
+    watchDevice.addEventListener('gattserverdisconnected', () => {
+      status.textContent = '워치 연결 끊김';
+      status.className = 'watch-status error';
+      btn.textContent = '⌚ 다시 연결';
+      document.getElementById('hr-display').style.display = 'none';
+    });
+
+    status.textContent = `${watchDevice.name || '워치'} 연결됨 ✓`;
+    status.className = 'watch-status connected';
+    btn.textContent = '⌚ 연결됨';
+    btn.disabled = true;
+  } catch(e) {
+    status.textContent = e.name === 'NotFoundError' ? '워치를 찾을 수 없어요' : '연결 실패: ' + e.message;
+    status.className = 'watch-status error';
+  }
+}
+
+function onHRData(e) {
+  const data  = e.target.value;
+  const flags = data.getUint8(0);
+  const bpm   = (flags & 0x01) ? data.getUint16(1, true) : data.getUint8(1);
+
+  // 베이스라인 계산 (최근 20개 평균)
+  hrHistory.push(bpm);
+  if (hrHistory.length > 20) hrHistory.shift();
+  hrBaseline = Math.round(hrHistory.reduce((a, b) => a + b, 0) / hrHistory.length);
+
+  // UI 업데이트
+  const hrDisplay = document.getElementById('hr-display');
+  hrDisplay.style.display = 'block';
+  document.getElementById('hr-value').textContent = bpm;
+  const pct = Math.min(Math.round((bpm / 200) * 100), 100);
+  document.getElementById('hr-bar').style.width = pct + '%';
+
+  // 급상승 감지: 베이스라인 수집 후(20회 이상), 30% 초과 상승
+  if (hrHistory.length >= 10 && hrBaseline > 0 && bpm > hrBaseline * 1.3) {
+    triggerAlert();
+  }
 }
 
 // ── 감도 레이블 ──
