@@ -414,7 +414,9 @@
     </div>
   </div>
   <div class="ext-url-wrap" id="ext-url-wrap">
-    <input type="url" id="ext-url-input" placeholder="YouTube / SoundCloud 주소 붙여넣기" oninput="localStorage.setItem('extSoundURL', this.value)">
+    <input type="url" class="ext-url-input" placeholder="링크 1" oninput="saveExtUrls()">
+    <input type="url" class="ext-url-input" placeholder="링크 2" oninput="saveExtUrls()" style="margin-top:6px">
+    <input type="url" class="ext-url-input" placeholder="링크 3" oninput="saveExtUrls()" style="margin-top:6px">
   </div>
 
   <div class="watch-wrap">
@@ -671,22 +673,38 @@ function startCalmSound() {
 }
 
 function startMelody() {
-  // 편안한 멜로디: C5-E5-G5-A5-G5-E5 반복
-  const notes = [523, 659, 784, 880, 784, 659, 523, 659];
+  // 펜타토닉 멜로디 + 에코 + 하모니
+  const melody = [523, 659, 784, 880, 784, 659, 587, 523, 587, 659, 784, 659];
+  const harmony= [392, 494, 587, 659, 587, 494, 440, 392, 440, 494, 587, 494];
+
+  // 딜레이(에코) 노드 공유
+  const delay = audioCtx.createDelay(0.6);
+  delay.delayTime.value = 0.32;
+  const fbGain = audioCtx.createGain();
+  fbGain.gain.value = 0.28;
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.45, audioCtx.currentTime + 1.5);
+  delay.connect(fbGain); fbGain.connect(delay);
+  delay.connect(masterGain); masterGain.connect(audioCtx.destination);
+  calmNodes.push({ osc: { stop: () => {} }, gain: masterGain });
+
   let i = 0;
   function playNext() {
     if (!audioCtx) return;
-    const osc  = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = notes[i % notes.length];
-    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.45);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
-    calmNodes.push({ osc, gain });
+    [[melody[i % melody.length], 0.16], [harmony[i % harmony.length], 0.07]].forEach(([freq, vol]) => {
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.55);
+      osc.connect(gain); gain.connect(delay); gain.connect(masterGain);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+      calmNodes.push({ osc, gain });
+    });
     i++;
-    calmTimeout = setTimeout(playNext, 550);
+    calmTimeout = setTimeout(playNext, 620);
   }
   playNext();
 }
@@ -710,30 +728,51 @@ function startRain() {
 }
 
 function startLullaby() {
-  // 브람스 자장가 첫 부분 (느리게)
-  const notes = [392, 392, 494, 392, 523, 494, 392, 330, 392, 440, 392];
+  // 브람스 자장가 - 멜로디 + 반주 화음 (느리고 부드럽게)
+  // G장조: G4=392 A4=440 B4=494 C5=523 D5=587 E5=659 G5=784
+  const melody  = [392, 392, 587, 587, 494, 392, 523, 494, 440, 440, 659, 659, 587];
+  const chords  = [196, 196, 294, 294, 247, 196, 262, 247, 220, 220, 330, 330, 294];
+  const durations=[900,900,900,600,900,1200,900,900,900,900,900,600,1200];
+
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 2);
+  masterGain.connect(audioCtx.destination);
+  calmNodes.push({ osc: { stop: () => {} }, gain: masterGain });
+
   let i = 0;
   function playNext() {
     if (!audioCtx) return;
-    const osc  = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = notes[i % notes.length];
-    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.1);
-    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.7);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.8);
-    calmNodes.push({ osc, gain });
+    const dur = (durations[i % durations.length]) / 1000;
+    [[melody[i % melody.length], 'triangle', 0.14],
+     [chords[i % chords.length], 'sine',     0.07]].forEach(([freq, type, vol]) => {
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur * 0.9);
+      osc.connect(gain); gain.connect(masterGain);
+      osc.start(); osc.stop(audioCtx.currentTime + dur);
+      calmNodes.push({ osc, gain });
+    });
     i++;
-    calmTimeout = setTimeout(playNext, 750);
+    calmTimeout = setTimeout(playNext, durations[i % durations.length] || 900);
   }
   playNext();
 }
 
+function saveExtUrls() {
+  const urls = [...document.querySelectorAll('.ext-url-input')].map(el => el.value).filter(v => v);
+  localStorage.setItem('extSoundURLs', JSON.stringify(urls));
+}
+
 function openExternalSound() {
-  const url = localStorage.getItem('extSoundURL');
-  if (url) window.open(url, '_blank');
+  const urls = JSON.parse(localStorage.getItem('extSoundURLs') || '[]').filter(u => u);
+  if (urls.length === 0) return;
+  const url = urls[Math.floor(Math.random() * urls.length)];
+  window.open(url, '_blank');
 }
 
 // ── 음악 종류 선택 ──
@@ -999,8 +1038,8 @@ function updateSensLabel() {
 // ── 초기화 ──
 updateSensLabel();
 selectSound(soundType);
-const savedExtUrl = localStorage.getItem('extSoundURL');
-if (savedExtUrl) document.getElementById('ext-url-input').value = savedExtUrl;
+const savedExtUrls = JSON.parse(localStorage.getItem('extSoundURLs') || '[]');
+document.querySelectorAll('.ext-url-input').forEach((el, i) => { if (savedExtUrls[i]) el.value = savedExtUrls[i]; });
 if (childPhotoURL) {
   const prev = document.getElementById('photo-preview');
   prev.src = childPhotoURL;
