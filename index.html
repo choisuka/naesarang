@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="내사랑">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%EB%82%B4%EC%82%AC%EB%9E%91%22%2C%22short_name%22%3A%22%EB%82%B4%EC%82%AC%EB%9E%91%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231a1a2e%22%2C%22theme_color%22%3A%22%231a1a2e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Crect%20width%3D%27100%27%20height%3D%27100%27%20rx%3D%2720%27%20fill%3D%27%231a1a2e%27%2F%3E%3Ctext%20y%3D%27.9em%27%20font-size%3D%2780%27%20x%3D%2710%27%3E%E2%9D%A4%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<title>내사랑</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: #1a1a2e;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .screen {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .screen.active { display: flex; }
+
+  /* ── 공통 ── */
+  h1 { font-size: 2.4rem; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 16px; }
+  p  { font-size: 1rem; color: #aaa; line-height: 1.7; margin-bottom: 24px; }
+  .btn {
+    background: #e94560;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    width: 100%;
+    max-width: 320px;
+  }
+  .btn:active { opacity: 0.85; }
+  .btn.ghost {
+    background: transparent;
+    border: 2px solid #555;
+    color: #aaa;
+    margin-top: 12px;
+  }
+
+  /* ── 1. 온보딩 ── */
+  #screen-onboard { background: #1a1a2e; }
+  #screen-onboard h1 { font-size: 3rem; color: #e94560; letter-spacing: 4px; }
+  #screen-onboard .slogan {
+    font-size: 1.1rem;
+    color: #ccc;
+    margin: 16px 0 40px;
+    line-height: 1.8;
+  }
+
+  /* ── 2. 설정 ── */
+  #screen-setup { background: #16213e; }
+  .photo-upload-box {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    border: 3px dashed #555;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    margin: 0 auto 24px;
+    overflow: hidden;
+    background: #0f3460;
+  }
+  .photo-upload-box img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .photo-upload-box span { font-size: 2.5rem; }
+  .photo-upload-box small { font-size: 0.75rem; color: #888; margin-top: 4px; }
+  #photo-input { display: none; }
+
+  .sensitivity-wrap { width: 100%; max-width: 320px; margin-bottom: 8px; }
+  .sensitivity-wrap label { font-size: 0.9rem; color: #aaa; display: block; margin-bottom: 8px; text-align: left; }
+  input[type=range] {
+    width: 100%; accent-color: #e94560; height: 6px;
+  }
+  .sensitivity-labels {
+    display: flex; justify-content: space-between;
+    font-size: 0.75rem; color: #666; margin-top: 4px;
+  }
+
+  /* ── 3. 대기 (감지 중) ── */
+  #screen-listen { background: #0f3460; }
+  .pulse-ring {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(233,69,96,0.15);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 32px;
+    position: relative;
+  }
+  .pulse-ring::before, .pulse-ring::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(233,69,96,0.3);
+    animation: pulse 2s ease-out infinite;
+  }
+  .pulse-ring::after { animation-delay: 1s; }
+  @keyframes pulse {
+    0%   { width: 160px; height: 160px; opacity: 0.8; }
+    100% { width: 240px; height: 240px; opacity: 0; }
+  }
+  .mic-icon { font-size: 3.5rem; }
+  .volume-bar-wrap {
+    width: 200px; height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 auto 32px;
+  }
+  .volume-bar {
+    height: 100%;
+    background: #e94560;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.1s;
+  }
+  #screen-listen h2 { color: #ccc; font-weight: 400; font-size: 1.1rem; }
+  .child-thumb {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 16px;
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .child-thumb-placeholder {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: #1a4a7a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 16px;
+  }
+
+  /* ── 4. 개입 ── */
+  #screen-alert {
+    background: #000;
+    padding: 0;
+  }
+  .alert-photo {
+    width: 100%; height: 55vh;
+    object-fit: cover;
+    opacity: 0.7;
+  }
+  .alert-photo-placeholder {
+    width: 100%; height: 55vh;
+    background: linear-gradient(180deg, #1a1a2e, #0f3460);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5rem;
+  }
+  .alert-text-box {
+    padding: 32px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .alert-text-box h2 {
+    font-size: 1.4rem;
+    line-height: 1.8;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .alert-text-box p {
+    font-size: 0.95rem;
+    color: #aaa;
+    margin-bottom: 0;
+  }
+
+  /* ── 5. 호흡 ── */
+  #screen-breath { background: #0d1b2a; }
+  .breath-circle {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #1a6b8a, #0d1b2a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    color: #7ec8e3;
+    margin: 0 auto 24px;
+    transition: transform 4s ease-in-out;
+    border: 2px solid #1a6b8a;
+  }
+  .breath-circle.inhale  { transform: scale(1.6); }
+  .breath-circle.hold    { transform: scale(1.6); }
+  .breath-circle.exhale  { transform: scale(1.0); }
+  #breath-label {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #7ec8e3;
+    margin-bottom: 8px;
+    min-height: 2rem;
+  }
+  #breath-count {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 32px;
+  }
+
+  /* ── 6. 타이머 ── */
+  #screen-timer { background: #1a2a1a; }
+  .timer-ring {
+    position: relative;
+    width: 200px; height: 200px;
+    margin: 0 auto 24px;
+  }
+  .timer-ring svg {
+    transform: rotate(-90deg);
+  }
+  .timer-ring circle {
+    fill: none;
+    stroke-width: 6;
+  }
+  .timer-ring .bg { stroke: #2a3a2a; }
+  .timer-ring .fg {
+    stroke: #4caf50;
+    stroke-linecap: round;
+    stroke-dasharray: 565;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+  }
+  #timer-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #4caf50;
+  }
+  #screen-timer h2 { color: #ccc; font-weight: 400; }
+  #screen-timer p { color: #888; }
+
+  /* ── 7. 마무리 ── */
+  #screen-done { background: #1a1a2e; }
+  #screen-done h2 { font-size: 1.5rem; line-height: 1.8; color: #fff; margin-bottom: 32px; }
+  .done-btns { width: 100%; max-width: 320px; }
+  .btn.yes { background: #4caf50; }
+  .btn.no  { background: #e94560; }
+
+  /* ── 8. 기록 ── */
+  #screen-log { background: #1a1a2e; padding: 24px 20px; overflow-y: auto; justify-content: flex-start; }
+  #screen-log h2 { margin-bottom: 4px; }
+  .log-summary {
+    display: flex; gap: 12px; width: 100%; max-width: 360px;
+    margin-bottom: 24px;
+  }
+  .log-summary-card {
+    flex: 1; background: #16213e; border-radius: 12px;
+    padding: 16px 8px; text-align: center;
+  }
+  .log-summary-card .num { font-size: 2rem; font-weight: 700; color: #e94560; }
+  .log-summary-card .lbl { font-size: 0.75rem; color: #888; margin-top: 4px; }
+  .log-list { width: 100%; max-width: 360px; }
+  .log-day { font-size: 0.8rem; color: #555; margin: 16px 0 8px; text-align: left; }
+  .log-item {
+    background: #16213e; border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .log-item .log-time { font-size: 0.95rem; color: #ccc; }
+  .log-item .log-outcome { font-size: 0.85rem; color: #888; }
+  .log-empty { color: #555; font-size: 0.95rem; margin-top: 40px; }
+  .log-back-btn {
+    position: fixed; top: 16px; left: 16px;
+    background: rgba(255,255,255,0.1); border: none; color: #fff;
+    width: 40px; height: 40px; border-radius: 50%;
+    font-size: 1.1rem; cursor: pointer; display: none; z-index: 10;
+    align-items: center; justify-content: center;
+  }
+  .log-back-btn.visible { display: flex; }
+
+  /* ── 설정 아이콘 ── */
+  .settings-btn {
+    position: fixed; top: 16px; right: 16px;
+    background: rgba(255,255,255,0.1);
+    border: none; color: #fff;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: none;
+    z-index: 10;
+  }
+  .settings-btn.visible { display: flex; align-items: center; justify-content: center; }
+
+  /* ── 기록 버튼 ── */
+  .log-btn {
+    position: fixed; bottom: 32px; left: 24px;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid #555;
+    color: #888;
+    border-radius: 50px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: none;
+    z-index: 10;
+  }
+  .log-btn.visible { display: block; }
+
+  /* ── 수동 버튼 ── */
+  .manual-btn {
+    position: fixed; bottom: 32px; right: 24px;
+    background: rgba(233,69,96,0.2);
+    border: 2px solid #e94560;
+    color: #e94560;
+    border-radius: 50px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: none;
+    z-index: 10;
+  }
+  .manual-btn.visible { display: block; }
+</style>
+</head>
+<body>
+
+<!-- 1. 온보딩 -->
+<div id="screen-onboard" class="screen active">
+  <h1>내사랑</h1>
+  <div class="slogan">사랑하는 내 아이에게<br>왜 화날까?</div>
+  <p>화나는 순간, 잠깐 멈출 수 있도록<br>조용히 도와드릴게요.</p>
+  <button class="btn" onclick="showScreen('setup')">시작하기</button>
+</div>
+
+<!-- 2. 설정 -->
+<div id="screen-setup" class="screen">
+  <h2>처음 설정</h2>
+  <p>아이 사진과 마이크 감도를<br>설정해주세요.</p>
+
+  <div class="photo-upload-box" onclick="document.getElementById('photo-input').click()">
+    <img id="photo-preview" src="" alt="" style="display:none">
+    <span id="photo-icon">📷</span>
+    <small id="photo-label">아이 사진 등록</small>
+  </div>
+  <input type="file" id="photo-input" accept="image/*" onchange="loadPhoto(event)">
+
+  <div class="sensitivity-wrap">
+    <label>마이크 감도 &mdash; <span id="sensitivity-val"></span></label>
+    <input type="range" id="sensitivity" min="1" max="10" value="6" oninput="updateSensLabel()">
+    <div class="sensitivity-labels"><span>민감하게</span><span>크게 외쳐야</span></div>
+  </div>
+
+  <button class="btn" onclick="startListening()">감지 시작</button>
+  <button class="btn ghost" onclick="showScreen('listen'); startListeningDemo()">사진 없이 시작</button>
+</div>
+
+<!-- 3. 감지 중 -->
+<div id="screen-listen" class="screen">
+  <div id="listen-thumb-wrap"></div>
+  <div class="pulse-ring">
+    <span class="mic-icon">🎤</span>
+  </div>
+  <div class="volume-bar-wrap">
+    <div class="volume-bar" id="volume-bar"></div>
+  </div>
+  <h2>조용히 듣고 있어요</h2>
+</div>
+
+<!-- 4. 개입 -->
+<div id="screen-alert" class="screen">
+  <div id="alert-photo-wrap"></div>
+  <div class="alert-text-box">
+    <h2 id="alert-message"></h2>
+    <p id="alert-sub"></p>
+    <button class="btn" onclick="showScreen('breath'); startBreath()">잠깐 멈추기</button>
+    <button class="btn ghost" onclick="dismissAlert()">괜찮아요, 돌아가기</button>
+  </div>
+</div>
+
+<!-- 5. 호흡 -->
+<div id="screen-breath" class="screen">
+  <h2>잠깐 숨을 고르세요</h2>
+  <div class="breath-circle" id="breath-circle">숨</div>
+  <div id="breath-label">준비...</div>
+  <div id="breath-count"></div>
+  <p>4초 들이쉬고 · 4초 참고 · 4초 내쉬기<br>3번 반복합니다</p>
+</div>
+
+<!-- 6. 타이머 -->
+<div id="screen-timer" class="screen">
+  <h2>조금만 기다려요</h2>
+  <div class="timer-ring">
+    <svg width="200" height="200">
+      <circle class="bg" cx="100" cy="100" r="90"/>
+      <circle class="fg" id="timer-circle" cx="100" cy="100" r="90"/>
+    </svg>
+    <div id="timer-text">3:00</div>
+  </div>
+  <p>3분 후 다시 생각해봐요.<br>충동적인 말은 3분을 못 버딥니다.</p>
+</div>
+
+<!-- 7. 마무리 -->
+<div id="screen-done" class="screen">
+  <h2>지금도 같은 말을<br>하고 싶으신가요?</h2>
+  <div class="done-btns">
+    <button class="btn yes" onclick="goBack()">아니요, 괜찮아졌어요 ❤️</button>
+    <button class="btn no"  onclick="tryAgain()">아직 화가 나요</button>
+  </div>
+</div>
+
+<!-- 8. 기록 -->
+<div id="screen-log" class="screen">
+  <h2>나의 기록</h2>
+  <p style="margin-bottom:16px">감정을 다스린 순간들</p>
+  <div class="log-summary">
+    <div class="log-summary-card">
+      <div class="num" id="log-total">0</div>
+      <div class="lbl">전체 감지</div>
+    </div>
+    <div class="log-summary-card">
+      <div class="num" id="log-calmed">0</div>
+      <div class="lbl">진정 성공</div>
+    </div>
+    <div class="log-summary-card">
+      <div class="num" id="log-today">0</div>
+      <div class="lbl">오늘</div>
+    </div>
+  </div>
+  <div class="log-list" id="log-list"></div>
+</div>
+
+<!-- 설정 / 수동 버튼 -->
+<button class="settings-btn" id="settings-btn" onclick="stopMic(); showScreen('setup')">⚙️</button>
+<button class="manual-btn"   id="manual-btn"   onclick="triggerAlert()">🚨 지금 화났어요</button>
+<button class="log-back-btn" id="log-back-btn" onclick="showScreen('listen')">←</button>
+<button class="log-btn" id="log-btn" onclick="openLog()">📊 기록</button>
+
+<script>
+let childPhotoURL = localStorage.getItem('childPhoto') || '';
+let sensitivity   = parseInt(localStorage.getItem('sensitivity') || '6');
+let audioCtx, analyser, micStream;
+let monitoringInterval;
+let breathInterval, timerInterval;
+
+// ── 화면 전환 ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+
+  const isListen = name === 'listen';
+  document.getElementById('settings-btn').classList.toggle('visible', isListen);
+  document.getElementById('manual-btn').classList.toggle('visible', isListen);
+  document.getElementById('log-btn').classList.toggle('visible', isListen);
+  document.getElementById('log-back-btn').classList.toggle('visible', name === 'log');
+}
+
+// ── 사진 로드 ──
+function loadPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    childPhotoURL = ev.target.result;
+    localStorage.setItem('childPhoto', childPhotoURL);
+    document.getElementById('photo-preview').src = childPhotoURL;
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('photo-icon').style.display  = 'none';
+    document.getElementById('photo-label').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── 감지 시작 ──
+function startListening() {
+  sensitivity = parseInt(document.getElementById('sensitivity').value);
+  localStorage.setItem('sensitivity', sensitivity);
+  showScreen('listen');
+  renderListenThumb();
+  startMic();
+}
+
+function startListeningDemo() {
+  renderListenThumb();
+  startMic();
+}
+
+function renderListenThumb() {
+  const wrap = document.getElementById('listen-thumb-wrap');
+  if (childPhotoURL) {
+    wrap.innerHTML = `<img class="child-thumb" src="${childPhotoURL}">`;
+  } else {
+    wrap.innerHTML = `<div class="child-thumb-placeholder">👶</div>`;
+  }
+}
+
+// ── 마이크 ──
+function stopMic() {
+  clearInterval(monitoringInterval);
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  if (audioCtx)  { audioCtx.close(); audioCtx = null; }
+  analyser = null;
+}
+
+async function startMic() {
+  stopMic();
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    analyser  = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    audioCtx.createMediaStreamSource(micStream).connect(analyser);
+    monitorVolume();
+  } catch(e) {
+    alert('마이크 권한이 필요합니다.\n브라우저 설정에서 마이크를 허용해주세요.');
+  }
+}
+
+function monitorVolume() {
+  const buf = new Float32Array(analyser.fftSize);
+  const threshold = 0.04 + (10 - sensitivity) * 0.025;
+  let highCount = 0;
+
+  monitoringInterval = setInterval(() => {
+    analyser.getFloatTimeDomainData(buf);
+    const rms = Math.sqrt(buf.reduce((s,v) => s + v*v, 0) / buf.length);
+    const pct = Math.min(rms / 0.3 * 100, 100);
+    document.getElementById('volume-bar').style.width = pct + '%';
+
+    if (rms > threshold) {
+      highCount++;
+      if (highCount >= 8) {
+        highCount = 0;
+        triggerAlert();
+      }
+    } else {
+      highCount = Math.max(0, highCount - 1);
+    }
+  }, 150);
+}
+
+// ── 개입 메시지 ──
+const ALERT_MESSAGES = [
+  { h: '사랑하는 내 아이에게\n왜 화날까?', p: '지금 아이는 당신을 보고 있습니다' },
+  { h: '10년 후, 이 순간을\n기억하게 됩니다', p: '아이의 마음속에 남는 건 말이 아닌 감정입니다' },
+  { h: '아이는 지금\n엄마·아빠의 세상 전부예요', p: '잠깐 멈추면 후회가 줄어듭니다' },
+  { h: '화는 잠깐이지만\n상처는 오래 남습니다', p: '숨 한 번만 고르고 이야기해요' },
+  { h: '아이가 당신에게\n배우고 있어요', p: '지금 이 순간이 아이의 감정 교과서입니다' },
+];
+
+function showRandomAlert() {
+  const msg = ALERT_MESSAGES[Math.floor(Math.random() * ALERT_MESSAGES.length)];
+  document.getElementById('alert-message').innerHTML = msg.h.replace('\n', '<br>');
+  document.getElementById('alert-sub').textContent = msg.p;
+}
+
+// ── 알림 무시 (모니터링 재시작) ──
+function dismissAlert() {
+  saveLog('dismissed');
+  showScreen('listen');
+  startMic();
+}
+
+// ── 개입 트리거 ──
+function triggerAlert() {
+  clearInterval(monitoringInterval);
+  const wrap = document.getElementById('alert-photo-wrap');
+  if (childPhotoURL) {
+    wrap.innerHTML = `<img class="alert-photo" src="${childPhotoURL}">`;
+  } else {
+    wrap.innerHTML = `<div class="alert-photo-placeholder">👶</div>`;
+  }
+  showRandomAlert();
+  showScreen('alert');
+}
+
+// ── 호흡 ──
+function startBreath() {
+  const circle = document.getElementById('breath-circle');
+  const label  = document.getElementById('breath-label');
+  const count  = document.getElementById('breath-count');
+  const steps  = [
+    { text: '들이쉬어요', cls: 'inhale', dur: 4000 },
+    { text: '참아요',     cls: 'hold',   dur: 4000 },
+    { text: '내쉬어요',   cls: 'exhale', dur: 4000 },
+  ];
+  let round = 0, step = 0;
+  const total = 3;
+
+  function nextStep() {
+    if (round >= total) {
+      showScreen('timer');
+      startTimer();
+      return;
+    }
+    const s = steps[step];
+    circle.className = 'breath-circle ' + s.cls;
+    label.textContent = s.text;
+    count.textContent = `${round + 1} / ${total}`;
+    step++;
+    if (step >= steps.length) { step = 0; round++; }
+    breathInterval = setTimeout(nextStep, s.dur);
+  }
+  nextStep();
+}
+
+// ── 타이머 ──
+function startTimer() {
+  const TOTAL = 180;
+  const circ  = document.getElementById('timer-circle');
+  const txt   = document.getElementById('timer-text');
+  const cir   = 2 * Math.PI * 90;
+  circ.style.strokeDasharray  = cir;
+  circ.style.strokeDashoffset = 0;
+
+  let remaining = TOTAL;
+  timerInterval = setInterval(() => {
+    remaining--;
+    const m = String(Math.floor(remaining / 60)).padStart(1,'0');
+    const s = String(remaining % 60).padStart(2,'0');
+    txt.textContent = m + ':' + s;
+    circ.style.strokeDashoffset = cir * (1 - remaining / TOTAL);
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      showScreen('done');
+    }
+  }, 1000);
+}
+
+// ── 마무리 ──
+function goBack() {
+  saveLog('calmed');
+  showScreen('listen');
+  startMic();
+}
+
+function tryAgain() {
+  saveLog('retry');
+  showScreen('breath');
+  startBreath();
+}
+
+// ── 기록 ──
+function getLogs() {
+  try { return JSON.parse(localStorage.getItem('logs') || '[]'); } catch { return []; }
+}
+
+function saveLog(outcome) {
+  const logs = getLogs();
+  logs.push({ time: Date.now(), outcome });
+  localStorage.setItem('logs', JSON.stringify(logs));
+}
+
+function openLog() {
+  const logs = getLogs();
+  const today = new Date().toDateString();
+  const todayLogs = logs.filter(l => new Date(l.time).toDateString() === today);
+  const calmedCount = logs.filter(l => l.outcome === 'calmed').length;
+
+  document.getElementById('log-total').textContent   = logs.length;
+  document.getElementById('log-calmed').textContent  = calmedCount;
+  document.getElementById('log-today').textContent   = todayLogs.length;
+
+  const list = document.getElementById('log-list');
+  if (logs.length === 0) {
+    list.innerHTML = '<div class="log-empty">아직 기록이 없어요.<br>앱이 조용히 지켜보고 있을게요.</div>';
+  } else {
+    const grouped = {};
+    [...logs].reverse().forEach(l => {
+      const d = new Date(l.time);
+      const key = d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(l);
+    });
+    const OUTCOME = { calmed: '진정됨 ✅', dismissed: '무시함 👋', retry: '재시도 🔄' };
+    list.innerHTML = Object.entries(grouped).map(([day, items]) =>
+      `<div class="log-day">${day}</div>` +
+      items.map(l => {
+        const t = new Date(l.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        return `<div class="log-item"><span class="log-time">${t}</span><span class="log-outcome">${OUTCOME[l.outcome] || l.outcome}</span></div>`;
+      }).join('')
+    ).join('');
+  }
+  showScreen('log');
+}
+
+// ── 감도 레이블 ──
+function updateSensLabel() {
+  const v = parseInt(document.getElementById('sensitivity').value);
+  const labels = ['','매우 민감','민감','조금 민감','보통 이하','보통','보통 이상','약간 큰 소리','큰 소리','매우 큰 소리','아주 크게'];
+  document.getElementById('sensitivity-val').textContent = labels[v];
+}
+
+// ── 초기화 ──
+updateSensLabel();
+if (childPhotoURL) {
+  const prev = document.getElementById('photo-preview');
+  prev.src = childPhotoURL;
+  prev.style.display = 'block';
+  document.getElementById('photo-icon').style.display  = 'none';
+  document.getElementById('photo-label').style.display = 'none';
+}
+</script>
+</body>
+</html>
