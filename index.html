@@ -341,6 +341,25 @@
   }
   .log-btn.visible { display: block; }
 
+  /* ── 음악 선택 ── */
+  .sound-wrap { width: 100%; max-width: 320px; margin-bottom: 8px; }
+  .sound-wrap > label { font-size: 0.9rem; color: #aaa; display: block; margin-bottom: 8px; text-align: left; }
+  .sound-options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sound-opt {
+    flex: 1; min-width: 120px;
+    background: #0f3460; border: 2px solid #333;
+    color: #aaa; border-radius: 10px;
+    padding: 10px 8px; font-size: 0.85rem;
+    cursor: pointer; text-align: center;
+  }
+  .sound-opt.selected { border-color: #e94560; color: #fff; }
+  .ext-url-wrap { width: 100%; max-width: 320px; margin-bottom: 8px; display: none; }
+  .ext-url-wrap input {
+    width: 100%; background: #0f3460; border: 1px solid #333;
+    color: #fff; border-radius: 8px; padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
   /* ── 수동 버튼 ── */
   .manual-btn {
     position: fixed; bottom: 32px; right: 24px;
@@ -383,6 +402,19 @@
     <label>마이크 감도 &mdash; <span id="sensitivity-val"></span></label>
     <input type="range" id="sensitivity" min="1" max="10" value="6" oninput="updateSensLabel()">
     <div class="sensitivity-labels"><span>민감하게</span><span>크게 외쳐야</span></div>
+  </div>
+
+  <div class="sound-wrap">
+    <label>진정 음악 종류</label>
+    <div class="sound-options">
+      <div class="sound-opt" id="sopt-1" onclick="selectSound(1)">🎵 멜로디</div>
+      <div class="sound-opt" id="sopt-2" onclick="selectSound(2)">🌧️ 빗소리</div>
+      <div class="sound-opt" id="sopt-3" onclick="selectSound(3)">🎶 자장가</div>
+      <div class="sound-opt" id="sopt-4" onclick="selectSound(4)">🔗 외부링크</div>
+    </div>
+  </div>
+  <div class="ext-url-wrap" id="ext-url-wrap">
+    <input type="url" id="ext-url-input" placeholder="YouTube / SoundCloud 주소 붙여넣기" oninput="localStorage.setItem('extSoundURL', this.value)">
   </div>
 
   <div class="watch-wrap">
@@ -490,9 +522,11 @@
 <script>
 let childPhotoURL = localStorage.getItem('childPhoto') || '';
 let sensitivity   = parseInt(localStorage.getItem('sensitivity') || '6');
+let soundType     = parseInt(localStorage.getItem('soundType') || '1');
 let audioCtx, analyser, micStream;
 let monitoringInterval;
 let breathInterval, timerInterval;
+let calmTimeout = null;
 
 // ── 화면 전환 ──
 function showScreen(name) {
@@ -612,38 +646,103 @@ function showRandomAlert() {
   document.getElementById('alert-sub').textContent = msg.p;
 }
 
-// ── 진정 음향 (Web Audio API) ──
+// ── 진정 음향 ──
 let calmNodes = [];
 
-function startCalmSound() {
-  stopCalmSound();
-  if (!audioCtx) return;
-  try {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const freqs = [174, 285, 396]; // 솔페지오 주파수 (긴장 완화)
-    freqs.forEach(freq => {
-      const osc  = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 2);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      calmNodes.push({ osc, gain });
-    });
-  } catch(e) {}
-}
-
 function stopCalmSound() {
+  if (calmTimeout) { clearTimeout(calmTimeout); calmTimeout = null; }
   calmNodes.forEach(({ osc, gain }) => {
     try {
-      gain.gain.linearRampToValueAtTime(0, (audioCtx?.currentTime || 0) + 1);
-      osc.stop((audioCtx?.currentTime || 0) + 1);
+      gain.gain.linearRampToValueAtTime(0, (audioCtx?.currentTime || 0) + 0.5);
+      osc.stop((audioCtx?.currentTime || 0) + 0.5);
     } catch(e) {}
   });
   calmNodes = [];
+}
+
+function startCalmSound() {
+  stopCalmSound();
+  if (soundType === 4) { openExternalSound(); return; }
+  if (!audioCtx) return;
+  try { if (audioCtx.state === 'suspended') audioCtx.resume(); } catch(e) {}
+  if      (soundType === 1) startMelody();
+  else if (soundType === 2) startRain();
+  else if (soundType === 3) startLullaby();
+}
+
+function startMelody() {
+  // 편안한 멜로디: C5-E5-G5-A5-G5-E5 반복
+  const notes = [523, 659, 784, 880, 784, 659, 523, 659];
+  let i = 0;
+  function playNext() {
+    if (!audioCtx) return;
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = notes[i % notes.length];
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.45);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+    calmNodes.push({ osc, gain });
+    i++;
+    calmTimeout = setTimeout(playNext, 550);
+  }
+  playNext();
+}
+
+function startRain() {
+  if (!audioCtx) return;
+  const bufSize = audioCtx.sampleRate * 3;
+  const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf; src.loop = true;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass'; filter.frequency.value = 600; filter.Q.value = 0.5;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 2);
+  src.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+  src.start();
+  calmNodes.push({ osc: src, gain });
+}
+
+function startLullaby() {
+  // 브람스 자장가 첫 부분 (느리게)
+  const notes = [392, 392, 494, 392, 523, 494, 392, 330, 392, 440, 392];
+  let i = 0;
+  function playNext() {
+    if (!audioCtx) return;
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = notes[i % notes.length];
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.1);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.7);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+    calmNodes.push({ osc, gain });
+    i++;
+    calmTimeout = setTimeout(playNext, 750);
+  }
+  playNext();
+}
+
+function openExternalSound() {
+  const url = localStorage.getItem('extSoundURL');
+  if (url) window.open(url, '_blank');
+}
+
+// ── 음악 종류 선택 ──
+function selectSound(type) {
+  soundType = type;
+  localStorage.setItem('soundType', type);
+  document.querySelectorAll('.sound-opt').forEach(el => el.classList.remove('selected'));
+  document.getElementById('sopt-' + type).classList.add('selected');
+  document.getElementById('ext-url-wrap').style.display = type === 4 ? 'block' : 'none';
 }
 
 // ── 알림 무시 (모니터링 재시작) ──
@@ -899,6 +998,9 @@ function updateSensLabel() {
 
 // ── 초기화 ──
 updateSensLabel();
+selectSound(soundType);
+const savedExtUrl = localStorage.getItem('extSoundURL');
+if (savedExtUrl) document.getElementById('ext-url-input').value = savedExtUrl;
 if (childPhotoURL) {
   const prev = document.getElementById('photo-preview');
   prev.src = childPhotoURL;
