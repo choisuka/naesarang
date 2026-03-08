@@ -43,7 +43,7 @@
   h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 16px; }
   p  { font-size: 1rem; color: #aaa; line-height: 1.7; margin-bottom: 24px; }
   .btn {
-    background: #e94560;
+    background: linear-gradient(135deg, #a78bfa, #7c5cbf);
     color: #fff;
     border: none;
     border-radius: 50px;
@@ -54,13 +54,15 @@
     margin-top: 16px;
     width: 100%;
     max-width: 320px;
+    box-shadow: 0 4px 16px rgba(160,100,255,0.35);
   }
   .btn:active { opacity: 0.85; }
   .btn.ghost {
     background: transparent;
-    border: 2px solid #555;
-    color: #aaa;
+    border: 2px solid rgba(167,139,250,0.4);
+    color: rgba(167,139,250,0.8);
     margin-top: 12px;
+    box-shadow: none;
   }
 
   /* ── 1. 온보딩 ── */
@@ -222,30 +224,49 @@
   }
 
   /* ── 2. 설정 ── */
-  #screen-setup { background: #16213e; }
+  #screen-setup {
+    background: linear-gradient(160deg, #2a1f4e 0%, #1a1535 50%, #141030 100%);
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-top: 36px;
+    padding-bottom: 36px;
+  }
+  #screen-setup h2 {
+    font-family: 'Nanum Brush Script', cursive;
+    font-size: 2rem;
+    font-weight: 400;
+    color: #d4b8ff;
+  }
+  #screen-setup p {
+    color: rgba(255,255,255,0.5);
+    font-family: 'Nanum Pen Script', cursive;
+    font-size: 1.05rem;
+  }
   .photo-upload-box {
-    width: 140px; height: 140px;
+    width: 110px; height: 110px;
     border-radius: 50%;
-    border: 3px dashed #555;
+    border: 2px dashed rgba(180,140,255,0.4);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     cursor: pointer;
-    margin: 0 auto 24px;
+    margin: 0 auto 16px;
     overflow: hidden;
-    background: #0f3460;
+    background: rgba(180,140,255,0.1);
+    flex-shrink: 0;
   }
   .photo-upload-box img {
     width: 100%; height: 100%;
     object-fit: cover;
+    display: block;
   }
-  .photo-upload-box span { font-size: 2.5rem; }
-  .photo-upload-box small { font-size: 0.75rem; color: #888; margin-top: 4px; }
+  .photo-upload-box span { font-size: 2rem; }
+  .photo-upload-box small { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 4px; }
   #photo-input { display: none; }
 
   .sensitivity-wrap { width: 100%; max-width: 320px; margin-bottom: 8px; }
   .sensitivity-wrap label { font-size: 0.9rem; color: #aaa; display: block; margin-bottom: 8px; text-align: left; }
   input[type=range] {
-    width: 100%; accent-color: #e94560; height: 6px;
+    width: 100%; accent-color: #a78bfa; height: 6px;
   }
   .sensitivity-labels {
     display: flex; justify-content: space-between;
@@ -543,14 +564,14 @@
       <div class="line">
         <div class="icon">🎤</div>
         <div class="text">
-          <strong style="font-family:'Gaegu',cursive;font-size:1.05rem">목소리 감지</strong>
+          <strong style="font-family:'Poor Story',cursive;font-size:1.05rem">목소리 감지</strong>
           <span>화가 날 때 자동으로 개입해요</span>
         </div>
       </div>
       <div class="line">
         <div class="icon">🎵</div>
         <div class="text">
-          <strong style="font-family:'Jua',sans-serif;font-size:1.05rem">진정 음악</strong>
+          <strong style="font-family:'Poor Story',cursive;font-size:1.05rem">진정 음악</strong>
           <span>아름다운 소리로 감정을 가라앉혀요</span>
         </div>
       </div>
