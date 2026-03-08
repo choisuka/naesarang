@@ -517,12 +517,19 @@
   .sound-options { display: flex; flex-wrap: wrap; gap: 8px; }
   .sound-opt {
     flex: 1; min-width: 120px;
-    background: #0f3460; border: 2px solid #333;
-    color: #aaa; border-radius: 10px;
-    padding: 10px 8px; font-size: 0.85rem;
+    background: rgba(180,140,255,0.08);
+    border: 1.5px solid rgba(180,140,255,0.2);
+    color: rgba(255,255,255,0.55);
+    border-radius: 10px;
+    padding: 10px 8px; font-size: 0.95rem;
+    font-family: 'Poor Story', cursive;
     cursor: pointer; text-align: center;
   }
-  .sound-opt.selected { border-color: #e94560; color: #fff; }
+  .sound-opt.selected {
+    border-color: #a78bfa;
+    background: rgba(167,139,250,0.22);
+    color: #fff;
+  }
   .ext-url-wrap { width: 100%; max-width: 320px; margin-bottom: 8px; display: none; }
   .ext-url-wrap input {
     width: 100%; background: #0f3460; border: 1px solid #333;
@@ -818,14 +825,12 @@ function monitorVolume() {
     const pct = Math.min(rms / 0.3 * 100, 100);
     document.getElementById('volume-bar').style.width = pct + '%';
 
-    if (alertLock) return;
-
     if (rms > threshold) {
       highCount++;
-      if (highCount === 1) {
-        playGong();                        // 즉시 징 소리
+      if (highCount === 1 && !alertLock) {
+        playGong();                        // 즉시 징 소리 (3초 중복 방지)
         alertLock = true;
-        setTimeout(() => { alertLock = false; }, 3000); // 3초 잠금
+        setTimeout(() => { alertLock = false; }, 3000);
       }
       if (highCount === 3) {
         startCalmSound();                  // 진정 음악
