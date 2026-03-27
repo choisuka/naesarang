@@ -14,3 +14,7 @@
 - 🫁 4-4-4 박스 호흡 가이드
 - ⏱️ 3분 타이머
 - 📊 감지 기록 & 시간대 차트
+
+## 개발 정보
+- 로컬 폴더: `C:/Users/USER/naesarang`
+- GitHub 레포: `choisuka/naesarang`
